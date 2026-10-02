@@ -5,6 +5,9 @@ A simple **Receipt Expense Tracker** built using **Python, Streamlit, OCR, OpenC
 This application allows users to upload a receipt image, automatically extract the text and expenses using **OCR**, analyze the spending, store expenses in a **SQLite database**, and suggest recipes based on the detected grocery items.
 
 ---
+## Demo Link
+
+https://receipt-expense-tracker-mdbaimwvpp8zkcpxvsyeeo.streamlit.app/
 
 ##  Project Overview
 
