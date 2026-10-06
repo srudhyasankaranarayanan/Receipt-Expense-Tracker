@@ -2,22 +2,14 @@ import sqlite3
 from datetime import datetime
 
 
-# ---------------------------------------------------
-# DATABASE CONFIGURATION
-# ---------------------------------------------------
-
 DB_NAME = "expenses.db"
 
 
-# ---------------------------------------------------
-# CREATE DATABASE AND TABLE
-# ---------------------------------------------------
+def create_table():
 
-def create_database():
+    conn = sqlite3.connect(DB_NAME)
 
-    connection = sqlite3.connect(DB_NAME)
-
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
@@ -28,48 +20,32 @@ def create_database():
         )
     """)
 
-    connection.commit()
+    conn.commit()
+    conn.close()
 
-    connection.close()
-
-
-# ---------------------------------------------------
-# ADD EXPENSE
-# ---------------------------------------------------
 
 def add_expense(item, price):
 
-    connection = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME)
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
-    current_date = datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    cursor.execute(
-        """
-        INSERT INTO expenses
-        (item, price, date)
+    cursor.execute("""
+        INSERT INTO expenses (item, price, date)
         VALUES (?, ?, ?)
-        """,
-        (item, price, current_date)
-    )
+    """, (item, price, current_date))
 
-    connection.commit()
+    conn.commit()
+    conn.close()
 
-    connection.close()
-
-
-# ---------------------------------------------------
-# GET ALL EXPENSES
-# ---------------------------------------------------
 
 def get_expenses():
 
-    connection = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME)
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
     cursor.execute("""
         SELECT id, item, price, date
@@ -77,83 +53,8 @@ def get_expenses():
         ORDER BY id DESC
     """)
 
-    expenses = cursor.fetchall()
+    data = cursor.fetchall()
 
-    connection.close()
+    conn.close()
 
-    return expenses
-
-
-# ---------------------------------------------------
-# GET TOTAL EXPENSE
-# ---------------------------------------------------
-
-def get_total_expense():
-
-    connection = sqlite3.connect(DB_NAME)
-
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT COALESCE(SUM(price), 0)
-        FROM expenses
-    """)
-
-    total = cursor.fetchone()[0]
-
-    connection.close()
-
-    return total
-
-
-# ---------------------------------------------------
-# DELETE ONE EXPENSE
-# ---------------------------------------------------
-
-def delete_expense(expense_id):
-
-    connection = sqlite3.connect(DB_NAME)
-
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        DELETE FROM expenses
-        WHERE id = ?
-        """,
-        (expense_id,)
-    )
-
-    connection.commit()
-
-    connection.close()
-
-
-# ---------------------------------------------------
-# CLEAR ALL EXPENSES
-# ---------------------------------------------------
-
-def clear_expenses():
-
-    connection = sqlite3.connect(DB_NAME)
-
-    cursor = connection.cursor()
-
-    cursor.execute(
-        "DELETE FROM expenses"
-    )
-
-    connection.commit()
-
-    connection.close()
-
-
-# ---------------------------------------------------
-# TEST DATABASE
-# ---------------------------------------------------
-
-if __name__ == "__main__":
-
-    create_database()
-
-    print("SQLite database created successfully!")
+    return data

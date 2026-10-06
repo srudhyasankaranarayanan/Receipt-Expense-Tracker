@@ -1,6 +1,7 @@
 streamlit
-pandas
-Pillow
-pytesseract
+easyocr
 opencv-python-headless
 numpy
+pandas
+Pillow
+matplotlib

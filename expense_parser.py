@@ -1,27 +1,36 @@
 import re
+import pandas as pd
 
 
-def extract_expenses(text):
+def clean_price(value):
+
+    value = value.replace(",", "")
+    value = value.replace("₹", "")
+    value = value.replace("Rs", "")
+    value = value.replace("INR", "")
+
+    # Common OCR mistakes
+    value = value.replace("O", "0")
+    value = value.replace("o", "0")
+    value = value.replace("I", "1")
+    value = value.replace("l", "1")
+
+    match = re.search(
+        r"\d+(?:\.\d{1,2})?",
+        value
+    )
+
+    if match:
+        return float(match.group())
+
+    return None
+
+
+def parse_expenses(text):
 
     expenses = []
 
     lines = text.split("\n")
-
-    ignored_words = [
-        "total",
-        "subtotal",
-        "grand total",
-        "gst",
-        "tax",
-        "cgst",
-        "sgst",
-        "discount",
-        "amount",
-        "cash",
-        "change",
-        "balance",
-        "round off"
-    ]
 
     for line in lines:
 
@@ -30,46 +39,115 @@ def extract_expenses(text):
         if not line:
             continue
 
-        # Replace multiple spaces with one space
-        line = re.sub(r"\s+", " ", line)
+        # --------------------------------------------------
+        # IGNORE HEADER / FOOTER
+        # --------------------------------------------------
 
-        # Find numbers at the end of the line
-        match = re.search(
-            r"(.+?)\s+(?:₹\s*)?(\d+(?:\.\d{1,2})?)$",
-            line
-        )
+        lower = line.lower()
 
-        if not match:
-            continue
-
-        item = match.group(1).strip()
-        price = float(match.group(2))
-
-        # Remove unwanted symbols
-        item = re.sub(
-            r"[^A-Za-z0-9\s\-]",
-            "",
-            item
-        ).strip()
-
-        if not item:
-            continue
-
-        # Ignore totals and other non-product lines
-        item_lower = item.lower()
+        ignored_words = [
+            "s.no",
+            "item",
+            "qty",
+            "rate",
+            "amount",
+            "total",
+            "discount",
+            "payment",
+            "received",
+            "thank",
+            "receipt",
+            "customer",
+            "date",
+            "address",
+            "net amount"
+        ]
 
         if any(
-            word in item_lower
+            word in lower
             for word in ignored_words
         ):
             continue
 
-        # Avoid invalid prices
-        if price <= 0:
+        # --------------------------------------------------
+        # FIND NUMBERS
+        # --------------------------------------------------
+
+        numbers = re.findall(
+            r"\d+(?:\.\d{1,2})?",
+            line
+        )
+
+        if len(numbers) < 2:
             continue
 
-        # Avoid lines that contain only numbers
-        if not re.search(r"[A-Za-z]", item):
+        # Convert numbers
+        numeric_values = []
+
+        for number in numbers:
+
+            try:
+                numeric_values.append(
+                    float(number)
+                )
+            except:
+                pass
+
+        if len(numeric_values) < 2:
+            continue
+
+        # --------------------------------------------------
+        # ITEM NAME
+        # --------------------------------------------------
+
+        # Remove numbers from line
+        item = re.sub(
+            r"\d+(?:\.\d{1,2})?",
+            "",
+            line
+        )
+
+        # Remove punctuation
+        item = re.sub(
+            r"[|:₹]",
+            "",
+            item
+        )
+
+        item = item.strip()
+
+        # Remove common unwanted words
+        item = re.sub(
+            r"\(.*?\)",
+            "",
+            item
+        )
+
+        item = item.strip()
+
+        # --------------------------------------------------
+        # VALID ITEM CHECK
+        # --------------------------------------------------
+
+        if len(item) < 2:
+            continue
+
+        if item.lower() in [
+            "total",
+            "discount",
+            "cash",
+            "amount"
+        ]:
+            continue
+
+        # --------------------------------------------------
+        # PRICE
+        # --------------------------------------------------
+
+        price = numeric_values[-1]
+
+        # Ignore very large numbers that may be dates
+        if price > 100000:
             continue
 
         expenses.append({
@@ -77,4 +155,7 @@ def extract_expenses(text):
             "Price": price
         })
 
-    return expenses
+    return pd.DataFrame(
+        expenses,
+        columns=["Item", "Price"]
+    )
