@@ -8,10 +8,19 @@ from PIL import Image
 # CREATE OCR READER
 # --------------------------------------------------
 
-reader = easyocr.Reader(
-    ['en'],
-    gpu=False
-)
+reader = None
+
+
+def get_reader():
+    global reader
+
+    if reader is None:
+        reader = easyocr.Reader(
+            ['en'],
+            gpu=False
+        )
+
+    return reader
 
 
 # --------------------------------------------------
@@ -65,7 +74,7 @@ def extract_text_with_boxes(image):
 
     processed = preprocess_image(image)
 
-    results = reader.readtext(
+    results = get_reader().readtext(
         processed,
         detail=1,
         paragraph=False,
